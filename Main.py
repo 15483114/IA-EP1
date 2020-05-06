@@ -1,26 +1,17 @@
-def trainSize():
-    with open('/content/mnist_treinamento.csv', 'r') as train:
-        trainSize = 0
+def size(file_path):
+    with open(file_path, 'r') as file:
+        size = 0
         while (1):
-            if (train.readline() != ''):
-                trainSize += 1
+            if (file.readline() != ''):
+                size += 1
             else:
                 break;
-        print('size train dataset: %d' % (trainSize))
+        print('number of lines: %d' % size)
 
-def testSize():
-    with open('/content/mnist_teste.csv', 'r') as test:
-        testSize = 0
-        while (1):
-            if (test.readline() != ''):
-                testSize += 1
-            else:
-                break;
-        print('size test dataset: %d' % (testSize))
 
-def createWeights():
-    with open('/content/mnist_treinamento.csv', 'r') as train:
-        line = train.readline()
+def createWeights(file_path):
+    with open(file_path, 'r') as file:
+        line = file.readline()
         array = line.split(',')
     print(len(array))
     import random
@@ -29,38 +20,46 @@ def createWeights():
         weights.append(random.uniform(-0.5, 0.5))
     print(weights)
 
-def trainPerceptron():
+
+def train(array, file_path):
     import random
     weights = []
     for i in range(len(array)):
         weights.append(random.uniform(-0.5, 0.5))
-
-    import numpy
 
     n_epoch = 50
     l_rate = 0.1
 
     for epoch in range(n_epoch):
         sum_error = 0.0
-        with open('/content/mnist_treinamento.csv', 'r') as train:
+        with open(file_path, 'r') as file:
             for k in range(1000):
-                line = train.readline()
+                line = file.readline()
 
-                if (len(line) > 100):
+                if len(line) > 100:
                     line = line.split(',')
-                    activation = weights[0]
+                    perceptron0 = weights[0]
+                    perceptron1 = weights[0]
+                    perceptron2 = weights[0]
+                    perceptron3 = weights[0]
+                    perceptron4 = weights[0]
+                    perceptron5 = weights[0]
+                    perceptron6 = weights[0]
+                    perceptron7 = weights[0]
+                    perceptron8 = weights[0]
+                    perceptron9 = weights[0]
 
                     for i in range(1, len(line)):
-                        activation0 += float(line[i]) / 255 * weights[i]
-                        activation1 += float(line[i]) / 255 * weights[i]
-                        activation2 += float(line[i]) / 255 * weights[i]
-                        activation3 += float(line[i]) / 255 * weights[i]
-                        activation4 += float(line[i]) / 255 * weights[i]
-                        activation5 += float(line[i]) / 255 * weights[i]
-                        activation6 += float(line[i]) / 255 * weights[i]
-                        activation7 += float(line[i]) / 255 * weights[i]
-                        activation8 += float(line[i]) / 255 * weights[i]
-                        activation9 += float(line[i]) / 255 * weights[i]
+                        perceptron0 += float(line[i]) / 255 * weights[i]
+                        perceptron1 += float(line[i]) / 255 * weights[i]
+                        perceptron2 += float(line[i]) / 255 * weights[i]
+                        perceptron3 += float(line[i]) / 255 * weights[i]
+                        perceptron4 += float(line[i]) / 255 * weights[i]
+                        perceptron5 += float(line[i]) / 255 * weights[i]
+                        perceptron6 += float(line[i]) / 255 * weights[i]
+                        perceptron7 += float(line[i]) / 255 * weights[i]
+                        perceptron8 += float(line[i]) / 255 * weights[i]
+                        perceptron9 += float(line[i]) / 255 * weights[i]
 
                     if (activation > 0):
                         prediction = 1
@@ -80,4 +79,3 @@ def trainPerceptron():
 
         # print('>epoch=%d, lrate=%.3f, error=%.3f' % (epoch, l_rate, sum_error))
         print(weights)
-

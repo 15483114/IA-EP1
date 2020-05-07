@@ -39,11 +39,13 @@ def train(file_path):
 
     for epoch in range(n_epoch):
         sum_error = numpy.zeros(10)
+        error_p = numpy.zeros(10)
         with open(file_path, 'r') as file:
+            # quantas linhas vamos analisar
             for k in range(10):
                 line = file.readline()
 
-                if len(line) > 100:
+                if len(line) > 10:
                     line = line.split(',')
                     perceptron = numpy.zeros(10)
 
@@ -57,19 +59,24 @@ def train(file_path):
                     error = numpy.zeros(10)
 
                     for i in range(10):
-                        if line[0] == i:
+                        if int(line[0]) == i:
                             answer = 1
                         else:
                             answer = 0
 
-                        error[i] = answer - 1 / (1 + numpy.exp(-perceptron[i]))
-                        sum_error[i] += error[i]
+                        perceptron[i] = 1 / (1 + numpy.exp(-perceptron[i]))
+
+                        error[i] = -(answer - perceptron[i])
+                        # sum_error[i] += error[i]
                         weights[i][0] = weights[i][0] + learn_rate * error[i]
+
+                        if error[i] >= 0.5:
+                            error_p[i] += 1
 
                         for j in range(1, len(line)):
                             weights[i][j] = weights[i][0] + learn_rate * error[i] * float(line[j]) / 255
 
-        print(sum_error[0])
+        print(error_p)
 
     return weights
 
@@ -78,7 +85,7 @@ def test(file_path, weights):
     with open(file_path, 'r') as file:
         for k in range(10):
             line = file.readline()
-            if len(line) > 100:
+            if len(line) > 10:
                 line = line.split(',')
                 perceptron = numpy.zeros(10)
 
@@ -91,16 +98,20 @@ def test(file_path, weights):
 
                 result = 0
                 for i in range(len(perceptron)):
+                    perceptron[i] = 1 / (1 + numpy.exp(-perceptron[i]))
                     if perceptron[result] < perceptron[i]:
                         result = i
 
-                print('correta: %d, resultado: %d'%(float(line[0]), result))
+                print(perceptron)
+                print('correta: %d, resultado: %d' % (float(line[0]), result))
 
-file = open("weights.txt", "x")
+
+# file = open("weights.txt", "x")
 weights = train('mnist_treinamento.csv')
-numpy.savetxt(file, )
-file.close()
+# numpy.savetxt(file, )
+# file.close()
 
 # file.open('weights.txt', 'r')
 # weights = file.readline()
 # test('mnist_teste.csv', weights)
+exit()

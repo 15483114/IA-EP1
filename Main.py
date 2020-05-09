@@ -4,12 +4,10 @@ import numpy
 def train(file_path):
     weights = create_weights(file_path)
     n_epoch = 100
-    learn_rate = 0.1
+    learn_rate = 0.01
 
     for epoch in range(n_epoch):
-        error0 = 0
-        error1 = 0
-        error2 = 0
+        acertos = 0
         with open(file_path, 'r') as file:
             for k in range(100):
                 row = file.readline()
@@ -24,15 +22,21 @@ def train(file_path):
                         calculate_activation(i, row, activation, weights)
                         answer = calculate_error(error, i, row, activation)
                         update_weights(error, i, learn_rate, row, weights)
-
                         # if i == 0:
-                        #     print(activation[i])
+                        #     print(
+                        #         'activation:%f answer:%f error:%f' % (activation[i], answer, error[i]))
 
-                    error0 += error[0]
-                    error1 += error[1]
-                    error2 += error[2]
-        print(
-            '>epoch=%d, lrate=%.3f, error0=%.3f error1=%.3f error2=%.3f' % (epoch, learn_rate, error0, error1, error2))
+                    result = 0
+                    for i in range(10):
+                        if (activation[result] > activation[i]):
+                            result = i
+                    # print(result)
+                    if result == float(row[0]):
+                        acertos += 1
+        print('epoch:%d acertos:%d' % (epoch, acertos))
+
+        # print(weights[0][300])
+
     return weights
 
 
@@ -42,10 +46,10 @@ def update_weights(error, i, learn_rate, row, weights):
         weights[i][j] = weights[i][j] + learn_rate * error[i] * float(row[i])
 
 
-def calculate_activation(i, line, perceptron, weights):
-    perceptron[i] = weights[i][0]
+def calculate_activation(i, line, activation, weights):
+    activation[i] = weights[i][0]
     for g in range(1, len(line)):
-        perceptron[i] += line[g] * weights[i][g]
+        activation[i] += line[g] * weights[i][g]
 
 
 def calculate_error(error, i, line, perceptron):
@@ -53,8 +57,13 @@ def calculate_error(error, i, line, perceptron):
         answer = 1
     else:
         answer = 0
-    perceptron[i] = 1 / (1 + numpy.exp(-perceptron[i]))
-    error[i] = answer - perceptron[i]
+    # perceptron[i] = 1 / (1 + numpy.exp(-perceptron[i]))
+    # error[i] = answer - perceptron[i]
+    # if answer == 0:
+        # error[i] /= 2
+    if answer == 1:
+        error[i] = answer - perceptron[i]
+        error[i] *= 100
     return answer
 
 

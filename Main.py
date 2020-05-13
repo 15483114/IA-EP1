@@ -13,10 +13,10 @@ teste = csv.reader(f)
 #m = open('misturinha.csv','w')
 #mix= csv.writer(m)
 
-# separando as linhas
+
 xs=[]
 combinacao=[]
-
+# separando as linhas em varios arrays
 for row in treino:
     xs.append(row)
     combinacao.append(row)
@@ -66,9 +66,7 @@ for o in range(10):
     weights.append(w)
 
 bias=[[], [] ,[] ,[] ,[] ,[] ,[], [], [], [] ] #bias/delta que ta no slide
-q=xs[1][1]
-e=w[1][1]
-print(q*e)
+
 '''
 for k in range (epoca):
     for i in range (1): #trocar por alguma forma genérica que indique quantidade de linhas

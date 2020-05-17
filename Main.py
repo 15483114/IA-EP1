@@ -5,7 +5,7 @@ import numpy
 
 size = 0
 learn_rate = 0.1
-epocas = 15
+epocas = 25
 
 
 def recebe_linha(line):
@@ -71,7 +71,7 @@ def create_weights():
 
 
 def train():
-    x = 30
+    x = 50
     tentativas=0
     acertos=0
     print('TREINANDO')
@@ -104,7 +104,7 @@ def train():
                     resposta=define_resposta(line[0],ativacao[l])
                     erro[m] = calcula_erro(resposta, 0)
                     weights[m] = atualiza_pesos(erro[m], weights[m], line)
-                erro[indice]=calcula_erro(maior, answer)
+                erro[indice]=calcula_erro(maior, 1)
                 weights[indice] = atualiza_pesos(erro[indice], weights[indice], line)
                 
                 #percentual_acerto += erro[indice]

@@ -5,7 +5,7 @@ import numpy
 
 size = 0
 learn_rate = 0.1
-epocas = 10
+epocas = 15
 
 
 def recebe_linha(line):
@@ -71,12 +71,13 @@ def create_weights():
 
 
 def train():
-    x = 10
+    x = 30
     tentativas=0
     acertos=0
     print('TREINANDO')
     weights=[[],[],[],[],[],[],[],[],[],[]]
     erro=[[],[],[],[],[],[],[],[],[],[]]
+    ativacao=[[],[],[],[],[],[],[],[],[],[]]
     for c in range (10):
         weights[c] = create_weights()
     for i in range(epocas):
@@ -91,17 +92,17 @@ def train():
                 maior=0
                 indice=0
                 for l in range(10):
-                    ativacao = calcula_ativacao(weights[l], line)
-                    if (ativacao>maior):
-                        maior=ativacao
+                    ativacao[l] = calcula_ativacao(weights[l], line)
+                    if (ativacao[l]>maior):
+                        maior=ativacao[l]
                         indice=l
                 answer=define_resposta(line[0],maior)
                 acertos+=answer
                 tentativas+=1
 #----------------------------------------------------------------                
                 for m in range(10):
-                    
-                    erro[m] = calcula_erro(ativacao, answer)
+                    resposta=define_resposta(line[0],ativacao[l])
+                    erro[m] = calcula_erro(resposta, 0)
                     weights[m] = atualiza_pesos(erro[m], weights[m], line)
                 erro[indice]=calcula_erro(maior, answer)
                 weights[indice] = atualiza_pesos(erro[indice], weights[indice], line)
@@ -112,7 +113,7 @@ def train():
                 line = file.readline()
                 # learn_rate = 1 / (1 + numpy.exp(-erro))
         # print(weights)
-        print('erro:%f' % (percentual_acerto))
+        print('acuracia:%f' % (percentual_acerto))
         '''if abs(percentual_acerto) < 234:
             break '''
     return weights

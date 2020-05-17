@@ -1,10 +1,11 @@
 import random
 
-import numpy
+import numpy 
+
 
 size = 0
 learn_rate = 0.1
-epocas = 50
+epocas = 10
 
 
 def recebe_linha(line):
@@ -19,8 +20,8 @@ def pre_processamento(line):
     return line
 
 
-def define_resposta(line):
-    if line[0] == 0:
+def define_resposta(line,ativacao):
+    if (line == ativacao):
         answer = 1
     else:
         answer = 0
@@ -38,9 +39,11 @@ def calcula_ativacao(weights, line):
     ativacao = weights[0]
     for i in range(size):
         ativacao += weights[i] * line[i]
-    ativacao = 1 / (1 + numpy.exp(-ativacao))
     return ativacao
 
+def compara_ativacao(ativacoes):
+    maior=max(ativacoes)
+    return maior
 
 def calcula_erro(ativacao, answer):
     # erro = numpy.power((answer - ativacao), 2)
@@ -68,20 +71,36 @@ def create_weights():
 
 
 def train():
-    x = 60000
+    x = 10
     print('TREINANDO')
-    weights = create_weights()
+    weights=[]
+    erro=[]
+    for c in range (10):
+        weights[c] = create_weights()
     for i in range(epocas):
         percentual_acerto = 0
         with open('mnist_treinamento.csv') as file:
             line = file.readline()
             for j in range(x):
+                
                 line = recebe_linha(line)
                 line = pre_processamento(line)
-                answer = define_resposta(line)
-                ativacao = calcula_ativacao(weights, line)
-                erro = calcula_erro(ativacao, answer)
-                weights = atualiza_pesos(erro, weights, line)
+                #answer = define_resposta(line)
+                maior=0
+                indice=0
+                for l in range(10):
+                    ativacao = calcula_ativacao(weights, line)
+                    if (ativacao>maior):
+                        maior=ativacao
+                        indice=l
+                answer=define_resposta(line[0],maior)
+#----------------------------------------------------------------                
+                for m in range(10):
+                    
+                    erro[m] = calcula_erro(ativacao, answer)
+                    weights[m] = atualiza_pesos(erro[m], weights, line)
+                erro[indice]=calcula_erro(maior, answer)
+                weights[indice] = atualiza_pesos(erro[indice], weights, line)
                 percentual_acerto += erro
                 # print('%d %f' % (answer, ativacao))
                 line = file.readline()
@@ -93,12 +112,15 @@ def train():
     return weights
 
 
-def test(weights):
-    print('TESTANDO')
+
+
+def test(weights,i):
+    print('TESTANDO Perceptron')
+    print (i)
     percentual_acerto = 0
     with open('mnist_teste.csv') as file:
         line = file.readline()
-        for j in range(10000):
+        for j in range(1):
             line = recebe_linha(line)
 
             line = pre_processamento(line)
@@ -112,6 +134,9 @@ def test(weights):
             print('%d %f' % (answer, ativacao))
             line = file.readline()
 
-weights = train()
-test(weights)
-exit()
+#weights = train(1)
+#test(weights,1)
+train()
+
+
+#exit()

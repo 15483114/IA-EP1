@@ -47,8 +47,7 @@ def compara_ativacao(ativacoes):
     return maior
 
 
-def calcula_erro(ativacao, answer):
-    # erro = numpy.power((answer - obtido), 2)
+def calcula_erro(answer, ativacao):
     erro = answer - ativacao
     return erro
 
@@ -56,7 +55,7 @@ def calcula_erro(ativacao, answer):
 def atualiza_pesos(erro, weights, line):
     weights[0] += learn_rate * erro
     for i in range(1, size):
-        weights[i] += learn_rate * erro * line[i] + 0.0001
+        weights[i] += learn_rate * erro * line[i]
     return weights
 
 
@@ -73,14 +72,6 @@ def create_weights():
 
 
 def imprime_matriz(matriz):
-    """
-    (list) --> None
-
-    Função que recebe uma matriz como entrada, ou seja uma
-    lista de listas, e então a imprime.
-    A função não tem nenhum valor de retorno.
-    """
-
     for linha in matriz:
         for elemento in linha:
             print("%2d" % elemento, end=" ")
@@ -88,67 +79,71 @@ def imprime_matriz(matriz):
 
 
 def train():
-    exemplos = 50
-    tentativas = 0
-    acertos = 0
+    exemplos = 10000
     print('TREINANDO')
     weights = [None] * 10
     obtido = [None] * 10
     esperado = [None] * 10
     erro = [None] * 10
-    matriz_confusao = [[0] * 10] * 10
+    matriz_confusao = [[0 for i in range(10)] for j in range(10)]
 
-    matriz_confusao[2][1] = 1
-
-    # print('\n'.join([''.join(['{:10}'.format(item) for item in row]) for row in matriz_confusao]))
     imprime_matriz(matriz_confusao)
+
     for c in range(10):
         weights[c] = create_weights()
 
     for epoca in range(epocas):
         percentual_acerto = 0
+        acertos = 0
+        with open('mnist_treinamento.csv') as file:
+            line = file.readline()
 
-    with open('mnist_treinamento.csv') as file:
-        line = file.readline()
+            for j in range(exemplos):
+                line = recebe_linha(line)
+                line = pre_processamento(line)
 
-    for j in range(exemplos):
-        line = recebe_linha(line)
-        line = pre_processamento(line)
+                maior = 0
+                indice = 0
 
-        maior = 0
-        indice = 0
+                for l in range(10):
+                    obtido[l] = calcula_ativacao(weights[l], line)
+                    if (obtido[l] > maior):
+                        maior = obtido[l]
+                        indice = l
 
-        for l in range(10):
-            obtido[l] = calcula_ativacao(weights[l], line)
-        if (obtido[l] > maior):
-            maior = obtido[l]
-        indice = l
+                for perceptron in range(10):
+                    if perceptron == indice:
+                        obtido[perceptron] = 1
+                    else:
+                        obtido[perceptron] = 0
 
-        for perceptron in range(10):
-            if perceptron == indice:
-                obtido[perceptron] = 1
-            else:
-                obtido[perceptron] = 0
+                for perceptron in range(10):
+                    esperado[perceptron] = define_resposta(int(line[0]), perceptron)
 
-        for perceptron in range(10):
-            esperado[perceptron] = define_resposta(int(line[0]), perceptron)
+                for perceptron in range(10):
+                    matriz_confusao[line[0]][perceptron] += obtido[perceptron]
 
-        for perceptron in range(10):
-            matriz_confusao[perceptron][line[0]] = perceptron
+                for perceptron in range(10):
+                    erro[perceptron] = calcula_erro(esperado[perceptron], obtido[perceptron])
+                    weights[perceptron] = atualiza_pesos(erro[perceptron], weights[perceptron], line)
 
-        for m in range(10):
-            resposta = define_resposta(line[0], obtido[l])
-        erro[m] = calcula_erro(resposta, 0)
-        weights[m] = atualiza_pesos(erro[m], weights[m], line)
-        erro[indice] = calcula_erro(maior, 1)
-        weights[indice] = atualiza_pesos(erro[indice], weights[indice], line)
 
-        percentual_acerto = acertos / exemplos
+                # print()
+                # print(esperado)
+                # print(obtido)
+                # print(erro)
+                # print()
 
-        line = file.readline()
+                if esperado[line[0]] == obtido[line[0]]:
+                    acertos += 1
 
-        print('acuracia:%f' % (percentual_acerto))
-        imprime_matriz(matriz_confusao)
+
+                percentual_acerto = acertos / exemplos
+
+                line = file.readline()
+
+    print('acuracia:%f' % (percentual_acerto))
+    imprime_matriz(matriz_confusao)
 
     return weights
 

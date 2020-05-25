@@ -2,6 +2,40 @@ import random
 
 import numpy
 
+import csv
+f = open('mnist_teste.csv')
+f2 = open('mnist_treinamento.csv')
+treino = csv.reader(f2)
+teste = csv.reader(f)
+
+# separando as linhas
+xs=[]
+combinacao=[]
+
+for row in treino:
+    xs.append(row)
+    combinacao.append(row)
+
+ts=[]
+for row in teste:
+    ts.append(row)
+    combinacao.append(row)
+#juntando os dois conjuntos em combinacao
+
+# embaralhando um array do tamanho dos dois conjuntos combinados. O objetivo é utilizar esse array no indice do conjunto, para seguir a ordem embaralhada.
+from random import shuffle
+
+shuffle(combinacao)
+
+m = open('misturinha.csv','w',newline='')
+
+# writing the data into the file 
+with m:     
+    write = csv.writer(m) 
+    write.writerows(combinacao)
+
+
+
 size = 0
 learn_rate = 0.1
 epocas = 10
@@ -211,9 +245,8 @@ def test(weights,epoca):
     acuracia_teste.append(percentual_acerto)
 
 
-# weights = train(1)
-# test(weights,1)
 train()
+
 
 import matplotlib.pyplot as pyplot
 

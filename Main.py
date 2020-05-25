@@ -180,8 +180,8 @@ def train():
                 percentual_acerto = acertos / total
 
                 line = file.readline()
-                print('acuracia:%f' % (percentual_acerto))
-                imprime_matriz(matriz_confusao)
+                '''print('acuracia:%f' % (percentual_acerto))
+                imprime_matriz(matriz_confusao)'''
      
     print("FINAL")
     print(acertos)

@@ -40,7 +40,7 @@ embaralho_tudo()
 
 size = 0
 learn_rate = 0.1
-epocas = 10
+epocas = 3
 
 acuracia_treinamento = []
 acuracia_teste = []
@@ -120,7 +120,7 @@ def imprime_matriz(matriz):
         print()
 
 
-def train():
+def train(file):
     global acuracia_treinamento
     exemplos = 600
     weights = [None] * 10
@@ -136,8 +136,7 @@ def train():
     acertos = 0
     errado = 0
     for epoca in range(epocas):
-
-        with open('mnist_treinamento.csv') as file:
+        with open(file) as file:
             line = file.readline()
 
             for j in range(exemplos):
@@ -191,7 +190,79 @@ def train():
     return weights
 
 
-def test(weights, epoca):
+def train_kfold():
+    global acuracia_treinamento
+    exemplos = 100
+    weights = [None] * 10
+    obtido = [None] * 10
+    esperado = [None] * 10
+    erro = [None] * 10
+    matriz_confusao = [[0 for i in range(10)] for j in range(10)]
+
+    lista_acuracias = []
+
+    for t in range(10):
+        acuracia = 0
+        acertos = 0
+        errado = 0
+
+        for c in range(10):
+            weights[c] = create_weights()
+
+        for epoca in range(epocas):
+            for treino in range(10):
+                if treino != t:
+                    name = 'parte_' + str(treino) + '.csv'
+                    with open(name) as file:
+                        line = file.readline()
+
+                        for teste in range(exemplos):
+                            line = recebe_linha(line)
+                            line = pre_processamento(line)
+
+                            maior = 0
+                            indice = 0
+
+                            for l in range(10):
+                                obtido[l] = calcula_ativacao(weights[l], line)
+                                if (obtido[l] > maior):
+                                    maior = obtido[l]
+                                    indice = l
+
+                            for perceptron in range(10):
+                                if perceptron == indice:
+                                    obtido[perceptron] = 1
+                                else:
+                                    obtido[perceptron] = 0
+
+                            for perceptron in range(10):
+                                esperado[perceptron] = define_resposta(int(line[0]), perceptron)
+
+                            for perceptron in range(10):
+                                matriz_confusao[line[0]][perceptron] += obtido[perceptron]
+
+                            for perceptron in range(10):
+                                erro[perceptron] = calcula_erro(esperado[perceptron], obtido[perceptron])
+                                weights[perceptron] = atualiza_pesos(erro[perceptron], weights[perceptron], line)
+
+                            if esperado[line[0]] == obtido[line[0]]:
+                                acertos += 1
+                            if esperado[line[0]] != obtido[line[0]]:
+                                errado += 1
+
+                            total = errado + acertos
+                            acuracia = acertos / total
+
+                            line = file.readline()
+
+                            # imprime_matriz(matriz_confusao)
+                print('%d - acuracia treinamento: %f' % (epoca, acuracia))
+                acuracia_treinamento.append(acuracia)
+            name = 'parte_' + str(t) + '.csv'
+            test(weights, epoca, name)
+
+
+def test(weights, epoca, file):
     exemplos = 100
     percentual_acerto = 0
     acertos = 0
@@ -202,7 +273,7 @@ def test(weights, epoca):
     matriz_confusao = [[0 for i in range(10)] for j in range(10)]
 
     # imprime_matriz(matriz_confusao)
-    with open('mnist_teste.csv') as file:
+    with open(file) as file:
         line = file.readline()
         for j in range(exemplos):
             line = recebe_linha(line)
@@ -240,7 +311,11 @@ def test(weights, epoca):
     acuracia_teste.append(percentual_acerto)
 
 
-train()
+# holdout
+# train('mnist_treinamento.csv')
+
+# kfold
+train_kfold()
 
 import matplotlib.pyplot as pyplot
 

@@ -2,9 +2,43 @@ import random
 
 import numpy
 
+import csv
+f = open('mnist_teste.csv')
+f2 = open('mnist_treinamento.csv')
+treino = csv.reader(f2)
+teste = csv.reader(f)
+
+# separando as linhas
+xs=[]
+combinacao=[]
+
+for row in treino:
+    xs.append(row)
+    combinacao.append(row)
+
+ts=[]
+for row in teste:
+    ts.append(row)
+    combinacao.append(row)
+#juntando os dois conjuntos em combinacao
+
+# embaralhando um array do tamanho dos dois conjuntos combinados. O objetivo é utilizar esse array no indice do conjunto, para seguir a ordem embaralhada.
+from random import shuffle
+
+shuffle(combinacao)
+
+m = open('misturinha.csv','w',newline='')
+
+# writing the data into the file 
+with m:     
+    write = csv.writer(m) 
+    write.writerows(combinacao)
+
+
+
 size = 0
 learn_rate = 0.1
-epocas = 3
+epocas = 10
 
 
 def recebe_linha(line):
@@ -79,7 +113,7 @@ def imprime_matriz(matriz):
 
 
 def train():
-    exemplos = 100
+    exemplos = 1000
     print('TREINANDO')
     weights = [None] * 10
     obtido = [None] * 10
@@ -94,7 +128,7 @@ def train():
         weights[c] = create_weights()
     percentual_acerto = 0
     acertos = 0
-    errado=0    
+    errado=0 
     for epoca in range(epocas):
 
         with open('mnist_treinamento.csv') as file:
@@ -146,15 +180,15 @@ def train():
                 percentual_acerto = acertos / total
 
                 line = file.readline()
-                
-                print('acuracia:%f' % (percentual_acerto))
-                imprime_matriz(matriz_confusao)
+                '''print('acuracia:%f' % (percentual_acerto))
+                imprime_matriz(matriz_confusao)'''
+     
     print("FINAL")
     print(acertos)
     print(total)
     print('acuracia:%f' % (percentual_acerto))
     imprime_matriz(matriz_confusao)
-    print(acertos)
+
     
 
     return weights
@@ -162,7 +196,7 @@ def train():
 
 def test(weights):
     print('TESTANDO Perceptron')
-    exemplos = 10000
+    exemplos = 1000
     percentual_acerto = 0
     acertos = 0
     obtido = [None] * 10
@@ -170,7 +204,7 @@ def test(weights):
 
     matriz_confusao = [[0 for i in range(10)] for j in range(10)]
 
-    imprime_matriz(matriz_confusao)
+
     with open('mnist_teste.csv') as file:
         line = file.readline()
         for j in range(exemplos):
@@ -211,8 +245,8 @@ def test(weights):
     imprime_matriz(matriz_confusao)
 
 
-# weights = train(1)
-# test(weights,1)
-train()
+weights = train()
+test(weights)
+#train()
 
 # exit()

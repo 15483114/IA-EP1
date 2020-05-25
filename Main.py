@@ -4,8 +4,14 @@ import numpy
 
 size = 0
 learn_rate = 0.1
-epocas = 3
+epocas = 10
 
+acuracia_treinamento = []
+acuracia_teste = []
+x = []
+
+for i in range(epocas):
+    x.append(int(i))
 
 def recebe_linha(line):
     line = line.split(',')
@@ -79,22 +85,21 @@ def imprime_matriz(matriz):
 
 
 def train():
-    exemplos = 100
-    print('TREINANDO')
+    global acuracia_treinamento
+    exemplos = 600
     weights = [None] * 10
     obtido = [None] * 10
     esperado = [None] * 10
     erro = [None] * 10
     matriz_confusao = [[0 for i in range(10)] for j in range(10)]
-    total=0
-    
-    #imprime_matriz(matriz_confusao)
+    total = 0
+
 
     for c in range(10):
         weights[c] = create_weights()
     percentual_acerto = 0
     acertos = 0
-    errado=0    
+    errado = 0
     for epoca in range(epocas):
 
         with open('mnist_treinamento.csv') as file:
@@ -124,12 +129,10 @@ def train():
 
                 for perceptron in range(10):
                     matriz_confusao[line[0]][perceptron] += obtido[perceptron]
-                    
 
                 for perceptron in range(10):
                     erro[perceptron] = calcula_erro(esperado[perceptron], obtido[perceptron])
                     weights[perceptron] = atualiza_pesos(erro[perceptron], weights[perceptron], line)
-
 
                 # print()
                 # print(esperado)
@@ -141,78 +144,88 @@ def train():
                     acertos += 1
                 if esperado[line[0]] != obtido[line[0]]:
                     errado += 1
-                    
-                total=errado+acertos
+
+                total = errado + acertos
                 percentual_acerto = acertos / total
 
                 line = file.readline()
-                
-                print('acuracia:%f' % (percentual_acerto))
-                imprime_matriz(matriz_confusao)
-    print("FINAL")
-    print(acertos)
-    print(total)
-    print('acuracia:%f' % (percentual_acerto))
-    imprime_matriz(matriz_confusao)
-    print(acertos)
-    
+
+                # imprime_matriz(matriz_confusao)
+        print('%d - acuracia treinamento: %f' % (epoca, percentual_acerto))
+        acuracia_treinamento.append(percentual_acerto)
+        test(weights,epoca)
+    # print(acertos)
+    # print(total)
+    # imprime_matriz(matriz_confusao)
+    # print(acertos)
 
     return weights
 
 
-def test(weights):
-    print('TESTANDO Perceptron')
-    exemplos = 10000
+def test(weights,epoca):
+    exemplos = 100
     percentual_acerto = 0
     acertos = 0
     obtido = [None] * 10
     esperado = [None] * 10
+    global acuracia_teste
 
     matriz_confusao = [[0 for i in range(10)] for j in range(10)]
 
-    imprime_matriz(matriz_confusao)
+    # imprime_matriz(matriz_confusao)
     with open('mnist_teste.csv') as file:
         line = file.readline()
         for j in range(exemplos):
-                line = recebe_linha(line)
-                line = pre_processamento(line)
+            line = recebe_linha(line)
+            line = pre_processamento(line)
 
-                maior = 0
-                indice = 0
+            maior = 0
+            indice = 0
 
-                for l in range(10):
-                    obtido[l] = calcula_ativacao(weights[l], line)
-                    if (obtido[l] > maior):
-                        maior = obtido[l]
-                        indice = l
+            for l in range(10):
+                obtido[l] = calcula_ativacao(weights[l], line)
+                if (obtido[l] > maior):
+                    maior = obtido[l]
+                    indice = l
 
-                for perceptron in range(10):
-                    if perceptron == indice:
-                        obtido[perceptron] = 1
-                    else:
-                        obtido[perceptron] = 0
+            for perceptron in range(10):
+                if perceptron == indice:
+                    obtido[perceptron] = 1
+                else:
+                    obtido[perceptron] = 0
 
-                for perceptron in range(10):
-                    esperado[perceptron] = define_resposta(int(line[0]), perceptron)
+            for perceptron in range(10):
+                esperado[perceptron] = define_resposta(int(line[0]), perceptron)
 
-                for perceptron in range(10):
-                    matriz_confusao[line[0]][perceptron] += obtido[perceptron]
+            for perceptron in range(10):
+                matriz_confusao[line[0]][perceptron] += obtido[perceptron]
 
+            if esperado[line[0]] == obtido[line[0]]:
+                acertos += 1
 
-                if esperado[line[0]] == obtido[line[0]]:
-                    acertos += 1
+            percentual_acerto = acertos / exemplos
 
+            line = file.readline()
 
-                percentual_acerto = acertos / exemplos
-
-                line = file.readline()
-
-    print('acuracia:%f' % (percentual_acerto))
-    imprime_matriz(matriz_confusao)
+    print('%d - acuracia teste: %f\n' % (epoca , percentual_acerto))
+    acuracia_teste.append(percentual_acerto)
 
 
 # weights = train(1)
 # test(weights,1)
 train()
 
+import matplotlib.pyplot as pyplot
+
+pyplot.plot(x, acuracia_treinamento, label='Treinamento')
+pyplot.plot(x, acuracia_teste, label='Teste')
+
+pyplot.xlabel('Epoca')
+pyplot.ylabel('Acuracia')
+
+pyplot.title('Holdout')
+
+pyplot.legend()
+
+pyplot.show()
 # exit()

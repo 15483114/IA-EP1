@@ -1,40 +1,42 @@
+import csv
 import random
+from random import shuffle
 
 import numpy
 
-import csv
-f = open('mnist_teste.csv')
-f2 = open('mnist_treinamento.csv')
-treino = csv.reader(f2)
-teste = csv.reader(f)
 
-# separando as linhas
-xs=[]
-combinacao=[]
+def embaralho_tudo():
+    file_teste = open('mnist_teste.csv')
+    file_treinamento = open('mnist_treinamento.csv')
+    treino = csv.reader(file_treinamento)
+    teste = csv.reader(file_teste)
 
-for row in treino:
-    xs.append(row)
-    combinacao.append(row)
+    combinacao = []
 
-ts=[]
-for row in teste:
-    ts.append(row)
-    combinacao.append(row)
-#juntando os dois conjuntos em combinacao
+    for row in treino:
+        combinacao.append(row)
+    for row in teste:
+        combinacao.append(row)
 
-# embaralhando um array do tamanho dos dois conjuntos combinados. O objetivo é utilizar esse array no indice do conjunto, para seguir a ordem embaralhada.
-from random import shuffle
+    shuffle(combinacao)
 
-shuffle(combinacao)
+    partes = split_list(combinacao)
 
-m = open('misturinha.csv','w',newline='')
-
-# writing the data into the file 
-with m:     
-    write = csv.writer(m) 
-    write.writerows(combinacao)
+    for i in range(10):
+        name = 'parte_' + str(i) + '.csv'
+        m = open(name, 'w', newline='')
+        with m:
+            write = csv.writer(m)
+            write.writerows(partes[i])
 
 
+def split_list(alist, wanted_parts=10):
+    length = len(alist)
+    return [alist[i * length // wanted_parts: (i + 1) * length // wanted_parts]
+            for i in range(wanted_parts)]
+
+
+embaralho_tudo()
 
 size = 0
 learn_rate = 0.1
@@ -46,6 +48,7 @@ x = []
 
 for i in range(epocas):
     x.append(int(i))
+
 
 def recebe_linha(line):
     line = line.split(',')
@@ -75,7 +78,6 @@ def inicializa_pesos_aleatorios(weights):
 
 
 def calcula_ativacao(weights, line):
-    # print(resposta_correta)
     ativacao = weights[0]
     for i in range(1, size):
         ativacao += weights[i] * line[i]
@@ -128,7 +130,6 @@ def train():
     matriz_confusao = [[0 for i in range(10)] for j in range(10)]
     total = 0
 
-
     for c in range(10):
         weights[c] = create_weights()
     percentual_acerto = 0
@@ -168,12 +169,6 @@ def train():
                     erro[perceptron] = calcula_erro(esperado[perceptron], obtido[perceptron])
                     weights[perceptron] = atualiza_pesos(erro[perceptron], weights[perceptron], line)
 
-                # print()
-                # print(esperado)
-                # print(obtido)
-                # print(erro)
-                # print()
-
                 if esperado[line[0]] == obtido[line[0]]:
                     acertos += 1
                 if esperado[line[0]] != obtido[line[0]]:
@@ -187,7 +182,7 @@ def train():
                 # imprime_matriz(matriz_confusao)
         print('%d - acuracia treinamento: %f' % (epoca, percentual_acerto))
         acuracia_treinamento.append(percentual_acerto)
-        test(weights,epoca)
+        test(weights, epoca)
     # print(acertos)
     # print(total)
     # imprime_matriz(matriz_confusao)
@@ -196,7 +191,7 @@ def train():
     return weights
 
 
-def test(weights,epoca):
+def test(weights, epoca):
     exemplos = 100
     percentual_acerto = 0
     acertos = 0
@@ -241,12 +236,11 @@ def test(weights,epoca):
 
             line = file.readline()
 
-    print('%d - acuracia teste: %f\n' % (epoca , percentual_acerto))
+    print('%d - acuracia teste: %f\n' % (epoca, percentual_acerto))
     acuracia_teste.append(percentual_acerto)
 
 
 train()
-
 
 import matplotlib.pyplot as pyplot
 

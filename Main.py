@@ -1,81 +1,218 @@
-def size(file_path):
-    with open(file_path, 'r') as file:
-        size = 0
-        while (1):
-            if (file.readline() != ''):
-                size += 1
-            else:
-                break;
-        print('number of lines: %d' % size)
+import random
+
+import numpy
+
+size = 0
+learn_rate = 0.1
+epocas = 3
 
 
-def createWeights(file_path):
-    with open(file_path, 'r') as file:
+def recebe_linha(line):
+    line = line.split(',')
+    line[784] = 0
+    return line
+
+
+def pre_processamento(line):
+    line[0] = int(line[0])
+    for i in range(1, len(line) - 1):
+        line[i] = float(line[i]) / 255
+    return line
+
+
+def define_resposta(resposta_correta, obtido):
+    if resposta_correta == obtido:
+        answer = 1
+    else:
+        answer = 0
+    return answer
+
+
+def inicializa_pesos_aleatorios(weights):
+    for i in range(size):
+        weights[i] = random.uniform(-0.5, 0.5)
+    return weights
+
+
+def calcula_ativacao(weights, line):
+    # print(resposta_correta)
+    ativacao = weights[0]
+    for i in range(1, size):
+        ativacao += weights[i] * line[i]
+    return ativacao
+
+
+def compara_ativacao(ativacoes):
+    maior = max(ativacoes)
+    return maior
+
+
+def calcula_erro(answer, ativacao):
+    erro = answer - ativacao
+    return erro
+
+
+def atualiza_pesos(erro, weights, line):
+    weights[0] += learn_rate * erro
+    for i in range(1, size):
+        weights[i] += learn_rate * erro * line[i]
+    return weights
+
+
+def create_weights():
+    global size
+    with open('mnist_treinamento.csv') as file:
         line = file.readline()
-        array = line.split(',')
-    print(len(array))
-    import random
-    weights = []
-    for i in range(len(array)):
-        weights.append(random.uniform(-0.5, 0.5))
-    print(weights)
+        line = recebe_linha(line)
+        size = len(line)
+        weights = numpy.zeros(size)
+        weights = inicializa_pesos_aleatorios(weights)
+        # print(weights)
+        return weights
 
 
-def train(array, file_path):
-    import random
-    weights = []
-    for i in range(len(array)):
-        weights.append(random.uniform(-0.5, 0.5))
+def imprime_matriz(matriz):
+    for linha in matriz:
+        for elemento in linha:
+            print("%2d" % elemento, end=" ")
+        print()
 
-    n_epoch = 50
-    l_rate = 0.1
 
-    for epoch in range(n_epoch):
-        sum_error = 0.0
-        with open(file_path, 'r') as file:
-            for k in range(1000):
+def train():
+    exemplos = 100
+    print('TREINANDO')
+    weights = [None] * 10
+    obtido = [None] * 10
+    esperado = [None] * 10
+    erro = [None] * 10
+    matriz_confusao = [[0 for i in range(10)] for j in range(10)]
+    total=0
+    
+    #imprime_matriz(matriz_confusao)
+
+    for c in range(10):
+        weights[c] = create_weights()
+    percentual_acerto = 0
+    acertos = 0
+    errado=0    
+    for epoca in range(epocas):
+
+        with open('mnist_treinamento.csv') as file:
+            line = file.readline()
+
+            for j in range(exemplos):
+                line = recebe_linha(line)
+                line = pre_processamento(line)
+
+                maior = 0
+                indice = 0
+
+                for l in range(10):
+                    obtido[l] = calcula_ativacao(weights[l], line)
+                    if (obtido[l] > maior):
+                        maior = obtido[l]
+                        indice = l
+
+                for perceptron in range(10):
+                    if perceptron == indice:
+                        obtido[perceptron] = 1
+                    else:
+                        obtido[perceptron] = 0
+
+                for perceptron in range(10):
+                    esperado[perceptron] = define_resposta(int(line[0]), perceptron)
+
+                for perceptron in range(10):
+                    matriz_confusao[line[0]][perceptron] += obtido[perceptron]
+                    
+
+                for perceptron in range(10):
+                    erro[perceptron] = calcula_erro(esperado[perceptron], obtido[perceptron])
+                    weights[perceptron] = atualiza_pesos(erro[perceptron], weights[perceptron], line)
+
+
+                # print()
+                # print(esperado)
+                # print(obtido)
+                # print(erro)
+                # print()
+
+                if esperado[line[0]] == obtido[line[0]]:
+                    acertos += 1
+                if esperado[line[0]] != obtido[line[0]]:
+                    errado += 1
+                    
+                total=errado+acertos
+                percentual_acerto = acertos / total
+
+                line = file.readline()
+                
+                print('acuracia:%f' % (percentual_acerto))
+                imprime_matriz(matriz_confusao)
+    print("FINAL")
+    print(acertos)
+    print(total)
+    print('acuracia:%f' % (percentual_acerto))
+    imprime_matriz(matriz_confusao)
+    print(acertos)
+    
+
+    return weights
+
+
+def test(weights):
+    print('TESTANDO Perceptron')
+    exemplos = 10000
+    percentual_acerto = 0
+    acertos = 0
+    obtido = [None] * 10
+    esperado = [None] * 10
+
+    matriz_confusao = [[0 for i in range(10)] for j in range(10)]
+
+    imprime_matriz(matriz_confusao)
+    with open('mnist_teste.csv') as file:
+        line = file.readline()
+        for j in range(exemplos):
+                line = recebe_linha(line)
+                line = pre_processamento(line)
+
+                maior = 0
+                indice = 0
+
+                for l in range(10):
+                    obtido[l] = calcula_ativacao(weights[l], line)
+                    if (obtido[l] > maior):
+                        maior = obtido[l]
+                        indice = l
+
+                for perceptron in range(10):
+                    if perceptron == indice:
+                        obtido[perceptron] = 1
+                    else:
+                        obtido[perceptron] = 0
+
+                for perceptron in range(10):
+                    esperado[perceptron] = define_resposta(int(line[0]), perceptron)
+
+                for perceptron in range(10):
+                    matriz_confusao[line[0]][perceptron] += obtido[perceptron]
+
+
+                if esperado[line[0]] == obtido[line[0]]:
+                    acertos += 1
+
+
+                percentual_acerto = acertos / exemplos
+
                 line = file.readline()
 
-                if len(line) > 100:
-                    line = line.split(',')
-                    perceptron0 = weights[0]
-                    perceptron1 = weights[0]
-                    perceptron2 = weights[0]
-                    perceptron3 = weights[0]
-                    perceptron4 = weights[0]
-                    perceptron5 = weights[0]
-                    perceptron6 = weights[0]
-                    perceptron7 = weights[0]
-                    perceptron8 = weights[0]
-                    perceptron9 = weights[0]
+    print('acuracia:%f' % (percentual_acerto))
+    imprime_matriz(matriz_confusao)
 
-                    for i in range(1, len(line)):
-                        perceptron0 += float(line[i]) / 255 * weights[i]
-                        perceptron1 += float(line[i]) / 255 * weights[i]
-                        perceptron2 += float(line[i]) / 255 * weights[i]
-                        perceptron3 += float(line[i]) / 255 * weights[i]
-                        perceptron4 += float(line[i]) / 255 * weights[i]
-                        perceptron5 += float(line[i]) / 255 * weights[i]
-                        perceptron6 += float(line[i]) / 255 * weights[i]
-                        perceptron7 += float(line[i]) / 255 * weights[i]
-                        perceptron8 += float(line[i]) / 255 * weights[i]
-                        perceptron9 += float(line[i]) / 255 * weights[i]
 
-                    if (activation > 0):
-                        prediction = 1
-                    else:
-                        prediction = 0
+# weights = train(1)
+# test(weights,1)
+train()
 
-                    if ((float(line[0]) == 7 and prediction == 1) or (float(line[0]) != 7) and prediction == 0):
-                        error = 0
-                    else:
-                        error = 1
-
-                    sum_error += error ** 2
-                    weights[0] = weights[0] + l_rate * error
-
-                    for i in range(1, len(line)):
-                        weights[i] = weights[0] + l_rate * error * float(line[i]) / 255
-
-        # print('>epoch=%d, lrate=%.3f, error=%.3f' % (epoch, l_rate, sum_error))
-        print(weights)
+# exit()

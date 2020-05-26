@@ -2,26 +2,46 @@ import csv
 import random
 from random import shuffle
 
+import matplotlib.pyplot as pyplot
 import numpy
+
+size = 0
+learn_rate = 0.1
+epocas = 3
+acuracia_treinamento = []
+acuracia_teste = []
+x = []
+
+
+def main():
+    # embaralho_tudo()
+    # treino_holdout('mnist_treinamento.csv')
+    treino_cross_validation()
+    exit()
+
+
+def imprime_resultado_holdout():
+    cria_array_auxiliar()
+    pyplot.plot(x, acuracia_treinamento, label='Treinamento')
+    pyplot.plot(x, acuracia_teste, label='Teste')
+    pyplot.xlabel('Epoca')
+    pyplot.ylabel('Acuracia')
+    pyplot.title('Holdout')
+    pyplot.legend()
+    pyplot.show()
 
 
 def embaralho_tudo():
-    file_teste = open('mnist_teste.csv')
-    file_treinamento = open('mnist_treinamento.csv')
-    treino = csv.reader(file_treinamento)
-    teste = csv.reader(file_teste)
-
+    file_teste, file_treinamento = abre_arquivos()
+    reader_teste, reader_treinamento = cria_csv_reader(file_teste, file_treinamento)
     combinacao = []
-
-    for row in treino:
-        combinacao.append(row)
-    for row in teste:
-        combinacao.append(row)
-
+    combina_arquivos_em_array(combinacao, reader_teste, reader_treinamento)
     shuffle(combinacao)
-
     partes = split_list(combinacao)
+    salva_partes(partes)
 
+
+def salva_partes(partes):
     for i in range(10):
         name = 'parte_' + str(i) + '.csv'
         m = open(name, 'w', newline='')
@@ -30,24 +50,34 @@ def embaralho_tudo():
             write.writerows(partes[i])
 
 
+def combina_arquivos_em_array(combinacao, teste, treino):
+    for row in treino:
+        combinacao.append(row)
+    for row in teste:
+        combinacao.append(row)
+
+
+def cria_csv_reader(file_teste, file_treinamento):
+    treino = csv.reader(file_treinamento)
+    teste = csv.reader(file_teste)
+    return teste, treino
+
+
+def abre_arquivos():
+    file_teste = open('mnist_teste.csv')
+    file_treinamento = open('mnist_treinamento.csv')
+    return file_teste, file_treinamento
+
+
 def split_list(alist, wanted_parts=10):
     length = len(alist)
     return [alist[i * length // wanted_parts: (i + 1) * length // wanted_parts]
             for i in range(wanted_parts)]
 
 
-embaralho_tudo()
-
-size = 0
-learn_rate = 0.1
-epocas = 3
-
-acuracia_treinamento = []
-acuracia_teste = []
-x = []
-
-for i in range(epocas):
-    x.append(int(i))
+def cria_array_auxiliar():
+    for i in range(epocas):
+        x.append(int(i))
 
 
 def recebe_linha(line):
@@ -120,77 +150,113 @@ def imprime_matriz(matriz):
         print()
 
 
-def train(file):
+def treino_holdout(path):
     global acuracia_treinamento
     exemplos = 600
+    erro, esperado, obtido, weights = cria_arrays_auxiliares()
+    matriz_confusao = cria_matriz_confusao()
+
+    cria_pesos(weights)
+
+    for epoca in range(epocas):
+        acuracia = 0
+        acertos = 0
+        errado = 0
+        with open(path, 'r') as file:
+            line = file.readline()
+
+            for exemplo in range(exemplos):
+                line = recebe_linha(line)
+                line = pre_processamento(line)
+                maior = 0
+                indice = 0
+                indice = calcula_ativacoes(indice, line, maior, obtido, weights)
+                ativa_array_obtidos(indice, obtido)
+                define_esperados(esperado, line)
+                atualiza_matriz_confusao(line, matriz_confusao, obtido)
+                calcula_erro_atualiza_peso(erro, esperado, line, obtido, weights)
+                acertos, errado = contabiliza_acertos(acertos, errado, esperado, line, obtido)
+                acuracia = calcula_acuracia(acertos, errado, acuracia)
+                line = file.readline()
+
+        print('%d - acuracia treinamento: %f' % (epoca, acuracia))
+        acuracia_treinamento.append(acuracia)
+        test(weights, epoca, 'mnist_teste.csv')
+
+    imprime_resultado_holdout()
+
+
+def cria_matriz_confusao():
+    matriz_confusao = [[0 for i in range(10)] for j in range(10)]
+    return matriz_confusao
+
+
+def cria_arrays_auxiliares():
     weights = [None] * 10
     obtido = [None] * 10
     esperado = [None] * 10
     erro = [None] * 10
-    matriz_confusao = [[0 for i in range(10)] for j in range(10)]
-    total = 0
+    return erro, esperado, obtido, weights
 
+
+def calcula_acuracia(acertos, errado, percentual_acerto):
+    total = errado + acertos
+    percentual_acerto = acertos / total
+    return percentual_acerto
+
+
+def contabiliza_acertos(acertos, errado, esperado, line, obtido):
+    if esperado[line[0]] == obtido[line[0]]:
+        acertos += 1
+    if esperado[line[0]] != obtido[line[0]]:
+        errado += 1
+    return acertos, errado
+
+
+def calcula_erro_atualiza_peso(erro, esperado, line, obtido, weights):
+    for perceptron in range(10):
+        erro[perceptron] = calcula_erro(esperado[perceptron], obtido[perceptron])
+        weights[perceptron] = atualiza_pesos(erro[perceptron], weights[perceptron], line)
+
+
+def atualiza_matriz_confusao(line, matriz_confusao, obtido):
+    for perceptron in range(10):
+        matriz_confusao[line[0]][perceptron] += obtido[perceptron]
+
+
+def calcula_ativacoes(indice, line, maior, obtido, weights):
+    for perceptron in range(10):
+        obtido[perceptron] = calcula_ativacao(weights[perceptron], line)
+        indice = atualiza_maior_valor_obtido(indice, maior, obtido, perceptron)
+    return indice
+
+
+def define_esperados(esperado, line):
+    for perceptron in range(10):
+        esperado[perceptron] = define_resposta(int(line[0]), perceptron)
+
+
+def ativa_array_obtidos(indice, obtido):
+    for perceptron in range(10):
+        if perceptron == indice:
+            obtido[perceptron] = 1
+        else:
+            obtido[perceptron] = 0
+
+
+def atualiza_maior_valor_obtido(indice, maior, obtido, perceptron):
+    if (obtido[perceptron] > maior):
+        maior = obtido[perceptron]
+        indice = perceptron
+    return indice
+
+
+def cria_pesos(weights):
     for c in range(10):
         weights[c] = create_weights()
-    percentual_acerto = 0
-    acertos = 0
-    errado = 0
-    for epoca in range(epocas):
-        with open(file) as file:
-            line = file.readline()
-
-            for j in range(exemplos):
-                line = recebe_linha(line)
-                line = pre_processamento(line)
-
-                maior = 0
-                indice = 0
-
-                for l in range(10):
-                    obtido[l] = calcula_ativacao(weights[l], line)
-                    if (obtido[l] > maior):
-                        maior = obtido[l]
-                        indice = l
-
-                for perceptron in range(10):
-                    if perceptron == indice:
-                        obtido[perceptron] = 1
-                    else:
-                        obtido[perceptron] = 0
-
-                for perceptron in range(10):
-                    esperado[perceptron] = define_resposta(int(line[0]), perceptron)
-
-                for perceptron in range(10):
-                    matriz_confusao[line[0]][perceptron] += obtido[perceptron]
-
-                for perceptron in range(10):
-                    erro[perceptron] = calcula_erro(esperado[perceptron], obtido[perceptron])
-                    weights[perceptron] = atualiza_pesos(erro[perceptron], weights[perceptron], line)
-
-                if esperado[line[0]] == obtido[line[0]]:
-                    acertos += 1
-                if esperado[line[0]] != obtido[line[0]]:
-                    errado += 1
-
-                total = errado + acertos
-                percentual_acerto = acertos / total
-
-                line = file.readline()
-
-                # imprime_matriz(matriz_confusao)
-        print('%d - acuracia treinamento: %f' % (epoca, percentual_acerto))
-        acuracia_treinamento.append(percentual_acerto)
-        test(weights, epoca)
-    # print(acertos)
-    # print(total)
-    # imprime_matriz(matriz_confusao)
-    # print(acertos)
-
-    return weights
 
 
-def train_kfold():
+def treino_cross_validation():
     global acuracia_treinamento
     exemplos = 100
     weights = [None] * 10
@@ -201,17 +267,17 @@ def train_kfold():
 
     lista_acuracias = []
 
-    for t in range(10):
+    for teste_fold in range(10):
         acuracia = 0
         acertos = 0
         errado = 0
 
-        for c in range(10):
-            weights[c] = create_weights()
+        for perceptron in range(10):
+            weights[perceptron] = create_weights()
 
         for epoca in range(epocas):
             for treino in range(10):
-                if treino != t:
+                if treino != teste_fold:
                     name = 'parte_' + str(treino) + '.csv'
                     with open(name) as file:
                         line = file.readline()
@@ -258,7 +324,7 @@ def train_kfold():
                             # imprime_matriz(matriz_confusao)
                 print('%d - acuracia treinamento: %f' % (epoca, acuracia))
                 acuracia_treinamento.append(acuracia)
-            name = 'parte_' + str(t) + '.csv'
+            name = 'parte_' + str(teste_fold) + '.csv'
             test(weights, epoca, name)
 
 
@@ -311,23 +377,4 @@ def test(weights, epoca, file):
     acuracia_teste.append(percentual_acerto)
 
 
-# holdout
-# train('mnist_treinamento.csv')
-
-# kfold
-train_kfold()
-
-import matplotlib.pyplot as pyplot
-
-pyplot.plot(x, acuracia_treinamento, label='Treinamento')
-pyplot.plot(x, acuracia_teste, label='Teste')
-
-pyplot.xlabel('Epoca')
-pyplot.ylabel('Acuracia')
-
-pyplot.title('Holdout')
-
-pyplot.legend()
-
-pyplot.show()
-# exit()
+main()

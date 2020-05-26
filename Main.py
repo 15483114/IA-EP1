@@ -10,6 +10,10 @@ learn_rate = 0.1
 epocas = 3
 acuracia_treinamento = []
 acuracia_teste = []
+
+acuracia_treinamento_cross_validation = []
+acuracia_teste_cross_validation = []
+
 x = []
 
 
@@ -151,6 +155,7 @@ def imprime_matriz(matriz):
 
 
 def treino_holdout(path):
+    print('Iniciando Holdout')
     global acuracia_treinamento
     exemplos = 600
     erro, esperado, obtido, weights = cria_arrays_auxiliares()
@@ -199,10 +204,10 @@ def cria_arrays_auxiliares():
     return erro, esperado, obtido, weights
 
 
-def calcula_acuracia(acertos, errado, percentual_acerto):
+def calcula_acuracia(acertos, errado, acuracia):
     total = errado + acertos
-    percentual_acerto = acertos / total
-    return percentual_acerto
+    acuracia = acertos / total
+    return acuracia
 
 
 def contabiliza_acertos(acertos, errado, esperado, line, obtido):
@@ -257,8 +262,9 @@ def cria_pesos(weights):
 
 
 def treino_cross_validation():
-    global acuracia_treinamento
-    exemplos = 100
+    print('...................\nIniciando Kfold Cross-Validation\n........................')
+    global acuracia_treinamento_cross_validation
+    exemplos = 600
     weights = [None] * 10
     obtido = [None] * 10
     esperado = [None] * 10
@@ -271,15 +277,17 @@ def treino_cross_validation():
         acuracia = 0
         acertos = 0
         errado = 0
+        epocas_kfold = 3
 
         for perceptron in range(10):
             weights[perceptron] = create_weights()
 
-        for epoca in range(epocas):
+        for epoca in range(epocas_kfold):
             for treino in range(10):
                 if treino != teste_fold:
-                    name = 'parte_' + str(treino) + '.csv'
-                    with open(name) as file:
+                    path_file = define_nome_arquivo_abrir(treino)
+
+                    with open(path_file) as file:
                         line = file.readline()
 
                         for teste in range(exemplos):
@@ -289,43 +297,24 @@ def treino_cross_validation():
                             maior = 0
                             indice = 0
 
-                            for l in range(10):
-                                obtido[l] = calcula_ativacao(weights[l], line)
-                                if (obtido[l] > maior):
-                                    maior = obtido[l]
-                                    indice = l
-
-                            for perceptron in range(10):
-                                if perceptron == indice:
-                                    obtido[perceptron] = 1
-                                else:
-                                    obtido[perceptron] = 0
-
-                            for perceptron in range(10):
-                                esperado[perceptron] = define_resposta(int(line[0]), perceptron)
-
-                            for perceptron in range(10):
-                                matriz_confusao[line[0]][perceptron] += obtido[perceptron]
-
-                            for perceptron in range(10):
-                                erro[perceptron] = calcula_erro(esperado[perceptron], obtido[perceptron])
-                                weights[perceptron] = atualiza_pesos(erro[perceptron], weights[perceptron], line)
-
-                            if esperado[line[0]] == obtido[line[0]]:
-                                acertos += 1
-                            if esperado[line[0]] != obtido[line[0]]:
-                                errado += 1
-
-                            total = errado + acertos
-                            acuracia = acertos / total
-
+                            indice = calcula_ativacoes(indice, line, maior, obtido, weights)
+                            ativa_array_obtidos(indice, obtido)
+                            define_esperados(esperado, line)
+                            atualiza_matriz_confusao(line, matriz_confusao, obtido)
+                            calcula_erro_atualiza_peso(erro, esperado, line, obtido, weights)
+                            acertos, errado = contabiliza_acertos(acertos, errado, esperado, line, obtido)
+                            acuracia = calcula_acuracia(acertos, errado, acuracia)
                             line = file.readline()
 
-                            # imprime_matriz(matriz_confusao)
-                print('%d - acuracia treinamento: %f' % (epoca, acuracia))
-                acuracia_treinamento.append(acuracia)
-            name = 'parte_' + str(teste_fold) + '.csv'
-            test(weights, epoca, name)
+        print('%d - acuracia treinamento: %f' % (teste_fold, acuracia))
+        acuracia_treinamento.append(acuracia)
+        path_file = define_nome_arquivo_abrir(teste_fold)
+        test(weights, teste_fold, path_file)
+
+
+def define_nome_arquivo_abrir(treino):
+    name = 'parte_' + str(treino) + '.csv'
+    return name
 
 
 def test(weights, epoca, file):

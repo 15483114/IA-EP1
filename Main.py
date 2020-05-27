@@ -19,8 +19,8 @@ x = []
 
 def main():
     # embaralho_tudo()
-    # treino_holdout('mnist_treinamento.csv')
-    treino_cross_validation()
+    treino_holdout('mnist_treinamento.csv')
+    # treino_cross_validation()
     exit()
 
 

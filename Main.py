@@ -7,7 +7,7 @@ import numpy
 
 size = 0
 learn_rate = 0.1
-epocas = 3
+epocas = 5
 acuracia_treinamento = []
 acuracia_teste = []
 
@@ -22,6 +22,174 @@ def main():
     treino_holdout('mnist_treinamento.csv')
     # treino_cross_validation()
     exit()
+
+
+main()
+
+
+def treino_holdout(path):
+    global acuracia_teste
+    acuracia_teste = []
+    print('Iniciando Holdout')
+    global acuracia_treinamento
+    exemplos = 100
+    erro, esperado, obtido, weights = cria_arrays_auxiliares()
+    matriz_confusao = cria_matriz_confusao()
+
+    cria_pesos(weights)
+
+    for epoca in range(epocas):
+        acuracia = 0
+        acertos = 0
+        errado = 0
+        with open(path, 'r') as file:
+            line = file.readline()
+
+            for exemplo in range(exemplos):
+                line = recebe_linha(line)
+                line = pre_processamento(line)
+                maior = 0
+                indice = 0
+                indice = calcula_ativacoes(indice, line, maior, obtido, weights)
+                ativa_array_obtidos(indice, obtido)
+                define_esperados(esperado, line)
+                atualiza_matriz_confusao(line, matriz_confusao, obtido)
+                calcula_erro_atualiza_peso(erro, esperado, line, obtido, weights)
+                acertos, errado = contabiliza_acertos(acertos, errado, esperado, line, obtido)
+                acuracia = calcula_acuracia(acertos, errado, acuracia)
+                line = file.readline()
+
+        print('%d - acuracia treinamento: %f' % (epoca, acuracia))
+        acuracia_treinamento.append(acuracia)
+        test(weights, epoca, 'mnist_teste.csv')
+
+    imprime_resultado_holdout()
+
+
+def treino_cross_validation():
+    global acuracia_teste
+    print('...................\nIniciando Kfold Cross-Validation\n........................')
+    global acuracia_treinamento_cross_validation
+    exemplos = 3000
+    weights = [None] * 10
+    obtido = [None] * 10
+    esperado = [None] * 10
+    erro = [None] * 10
+    matriz_confusao = [[0 for i in range(10)] for j in range(10)]
+
+    lista_acuracias_teste = []
+    lista_acuracias_treinamento = []
+
+    for teste_fold in range(10):
+        print('...................\nFold de teste: %d\n........................' % teste_fold)
+        acuracia_teste = []
+        x = []
+        acuracia = 0
+        acertos = 0
+        errado = 0
+        epocas_kfold = 6
+
+        for perceptron in range(10):
+            weights[perceptron] = create_weights()
+        acuracia_treinamento_cross_validation = []
+        for epoca in range(epocas_kfold):
+            for treino in range(10):
+                if treino != teste_fold:
+                    path_file = define_nome_arquivo_abrir(treino)
+
+                    with open(path_file) as file:
+                        line = file.readline()
+
+                        for teste in range(exemplos):
+                            line = recebe_linha(line)
+                            line = pre_processamento(line)
+
+                            maior = 0
+                            indice = 0
+
+                            indice = calcula_ativacoes(indice, line, maior, obtido, weights)
+                            ativa_array_obtidos(indice, obtido)
+                            define_esperados(esperado, line)
+                            atualiza_matriz_confusao(line, matriz_confusao, obtido)
+                            calcula_erro_atualiza_peso(erro, esperado, line, obtido, weights)
+                            acertos, errado = contabiliza_acertos(acertos, errado, esperado, line, obtido)
+                            acuracia = calcula_acuracia(acertos, errado, acuracia)
+                            line = file.readline()
+
+            print('Fold %d - Epoca %d - Acuracia treinamento %f' % (teste_fold, epoca, acuracia))
+            acuracia_treinamento_cross_validation.append(acuracia)
+            path_file = define_nome_arquivo_abrir(teste_fold)
+            test(weights, teste_fold, path_file)
+
+        x = []
+        x = cria_array_auxiliar(epocas_kfold)
+        print(x)
+        pyplot.plot(x, acuracia_treinamento_cross_validation, label='Treinamento')
+        pyplot.plot(x, acuracia_teste, label='Teste')
+        pyplot.xlabel('Epoca')
+        pyplot.ylabel('Acuracia')
+        pyplot.title('Cross-Validation\nFold %d' % teste_fold)
+        pyplot.legend()
+        pyplot.show()
+        pyplot.close()
+        lista_acuracias_treinamento.append(
+            acuracia_treinamento_cross_validation[len(acuracia_treinamento_cross_validation) - 1])
+        lista_acuracias_teste.append(acuracia_teste[len(acuracia_teste) - 1])
+
+    media_treinamento = calcula_media(lista_acuracias_treinamento)
+    media_teste = calcula_media(lista_acuracias_teste)
+
+    print('................................\ncuracia treinamento média %f' % media_treinamento)
+    print('Acuracia teste média %f\n.........................................' % media_teste)
+
+
+def test(weights, epoca, file):
+    exemplos = 100
+    acuracia = 0
+    acertos = 0
+    obtido = [None] * 10
+    esperado = [None] * 10
+    global acuracia_teste
+
+    matriz_confusao = [[0 for i in range(10)] for j in range(10)]
+
+    # imprime_matriz(matriz_confusao)
+    with open(file) as file:
+        line = file.readline()
+        for j in range(exemplos):
+            line = recebe_linha(line)
+            line = pre_processamento(line)
+
+            maior = 0
+            indice = 0
+
+            for l in range(10):
+                obtido[l] = calcula_ativacao(weights[l], line)
+                if (obtido[l] > maior):
+                    maior = obtido[l]
+                    indice = l
+
+            for perceptron in range(10):
+                if perceptron == indice:
+                    obtido[perceptron] = 1
+                else:
+                    obtido[perceptron] = 0
+
+            for perceptron in range(10):
+                esperado[perceptron] = define_resposta(int(line[0]), perceptron)
+
+            for perceptron in range(10):
+                matriz_confusao[line[0]][perceptron] += obtido[perceptron]
+
+            if esperado[line[0]] == obtido[line[0]]:
+                acertos += 1
+
+            acuracia = acertos / exemplos
+
+            line = file.readline()
+
+    print('%d - acuracia teste: %f\n' % (epoca, acuracia))
+    acuracia_teste.append(acuracia)
 
 
 def imprime_resultado_holdout():
@@ -156,45 +324,6 @@ def imprime_matriz(matriz):
         print()
 
 
-def treino_holdout(path):
-    global acuracia_teste
-    acuracia_teste = []
-    print('Iniciando Holdout')
-    global acuracia_treinamento
-    exemplos = 600
-    erro, esperado, obtido, weights = cria_arrays_auxiliares()
-    matriz_confusao = cria_matriz_confusao()
-
-    cria_pesos(weights)
-
-    for epoca in range(epocas):
-        acuracia = 0
-        acertos = 0
-        errado = 0
-        with open(path, 'r') as file:
-            line = file.readline()
-
-            for exemplo in range(exemplos):
-                line = recebe_linha(line)
-                line = pre_processamento(line)
-                maior = 0
-                indice = 0
-                indice = calcula_ativacoes(indice, line, maior, obtido, weights)
-                ativa_array_obtidos(indice, obtido)
-                define_esperados(esperado, line)
-                atualiza_matriz_confusao(line, matriz_confusao, obtido)
-                calcula_erro_atualiza_peso(erro, esperado, line, obtido, weights)
-                acertos, errado = contabiliza_acertos(acertos, errado, esperado, line, obtido)
-                acuracia = calcula_acuracia(acertos, errado, acuracia)
-                line = file.readline()
-
-        print('%d - acuracia treinamento: %f' % (epoca, acuracia))
-        acuracia_treinamento.append(acuracia)
-        test(weights, epoca, 'mnist_teste.csv')
-
-    imprime_resultado_holdout()
-
-
 def cria_matriz_confusao():
     matriz_confusao = [[0 for i in range(10)] for j in range(10)]
     return matriz_confusao
@@ -272,135 +401,6 @@ def calcula_media(array):
     return sum / 10
 
 
-def treino_cross_validation():
-    global acuracia_teste
-    print('...................\nIniciando Kfold Cross-Validation\n........................')
-    global acuracia_treinamento_cross_validation
-    exemplos = 3000
-    weights = [None] * 10
-    obtido = [None] * 10
-    esperado = [None] * 10
-    erro = [None] * 10
-    matriz_confusao = [[0 for i in range(10)] for j in range(10)]
-
-    lista_acuracias_teste = []
-    lista_acuracias_treinamento = []
-
-    for teste_fold in range(10):
-        print('...................\nFold de teste: %d\n........................' % teste_fold)
-        acuracia_teste = []
-        x = []
-        acuracia = 0
-        acertos = 0
-        errado = 0
-        epocas_kfold = 6
-
-        for perceptron in range(10):
-            weights[perceptron] = create_weights()
-        acuracia_treinamento_cross_validation = []
-        for epoca in range(epocas_kfold):
-            for treino in range(10):
-                if treino != teste_fold:
-                    path_file = define_nome_arquivo_abrir(treino)
-
-                    with open(path_file) as file:
-                        line = file.readline()
-
-                        for teste in range(exemplos):
-                            line = recebe_linha(line)
-                            line = pre_processamento(line)
-
-                            maior = 0
-                            indice = 0
-
-                            indice = calcula_ativacoes(indice, line, maior, obtido, weights)
-                            ativa_array_obtidos(indice, obtido)
-                            define_esperados(esperado, line)
-                            atualiza_matriz_confusao(line, matriz_confusao, obtido)
-                            calcula_erro_atualiza_peso(erro, esperado, line, obtido, weights)
-                            acertos, errado = contabiliza_acertos(acertos, errado, esperado, line, obtido)
-                            acuracia = calcula_acuracia(acertos, errado, acuracia)
-                            line = file.readline()
-
-            print('Fold %d - Epoca %d - Acuracia treinamento %f' % (teste_fold, epoca, acuracia))
-            acuracia_treinamento_cross_validation.append(acuracia)
-            path_file = define_nome_arquivo_abrir(teste_fold)
-            test(weights, teste_fold, path_file)
-
-        x = []
-        x = cria_array_auxiliar(epocas_kfold)
-        print(x)
-        pyplot.plot(x, acuracia_treinamento_cross_validation, label='Treinamento')
-        pyplot.plot(x, acuracia_teste, label='Teste')
-        pyplot.xlabel('Epoca')
-        pyplot.ylabel('Acuracia')
-        pyplot.title('Cross-Validation\nFold %d' % teste_fold)
-        pyplot.legend()
-        pyplot.show()
-        pyplot.close()
-        lista_acuracias_treinamento.append(
-            acuracia_treinamento_cross_validation[len(acuracia_treinamento_cross_validation) - 1])
-        lista_acuracias_teste.append(acuracia_teste[len(acuracia_teste) - 1])
-
-    media_treinamento = calcula_media(lista_acuracias_treinamento)
-    media_teste = calcula_media(lista_acuracias_teste)
-
-    print('................................\ncuracia treinamento média %f' % media_treinamento)
-    print('Acuracia teste média %f\n.........................................' % media_teste)
-
-
 def define_nome_arquivo_abrir(treino):
     name = 'parte_' + str(treino) + '.csv'
     return name
-
-
-def test(weights, epoca, file):
-    exemplos = 100
-    percentual_acerto = 0
-    acertos = 0
-    obtido = [None] * 10
-    esperado = [None] * 10
-    global acuracia_teste
-
-    matriz_confusao = [[0 for i in range(10)] for j in range(10)]
-
-    # imprime_matriz(matriz_confusao)
-    with open(file) as file:
-        line = file.readline()
-        for j in range(exemplos):
-            line = recebe_linha(line)
-            line = pre_processamento(line)
-
-            maior = 0
-            indice = 0
-
-            for l in range(10):
-                obtido[l] = calcula_ativacao(weights[l], line)
-                if (obtido[l] > maior):
-                    maior = obtido[l]
-                    indice = l
-
-            for perceptron in range(10):
-                if perceptron == indice:
-                    obtido[perceptron] = 1
-                else:
-                    obtido[perceptron] = 0
-
-            for perceptron in range(10):
-                esperado[perceptron] = define_resposta(int(line[0]), perceptron)
-
-            for perceptron in range(10):
-                matriz_confusao[line[0]][perceptron] += obtido[perceptron]
-
-            if esperado[line[0]] == obtido[line[0]]:
-                acertos += 1
-
-            percentual_acerto = acertos / exemplos
-
-            line = file.readline()
-
-    print('%d - acuracia teste: %f\n' % (epoca, percentual_acerto))
-    acuracia_teste.append(percentual_acerto)
-
-
-main()

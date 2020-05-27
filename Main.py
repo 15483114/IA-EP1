@@ -7,7 +7,7 @@ import numpy
 
 size = 0
 learn_rate = 0.1
-epocas = 5
+epocas = 10
 acuracia_treinamento = []
 acuracia_teste = []
 
@@ -22,9 +22,6 @@ def main():
     treino_holdout('mnist_treinamento.csv')
     # treino_cross_validation()
     exit()
-
-
-main()
 
 
 def treino_holdout(path):
@@ -63,7 +60,7 @@ def treino_holdout(path):
         acuracia_treinamento.append(acuracia)
         test(weights, epoca, 'mnist_teste.csv')
 
-    imprime_resultado_holdout()
+    # imprime_resultado_holdout()
 
 
 def treino_cross_validation():
@@ -150,6 +147,7 @@ def test(weights, epoca, file):
     obtido = [None] * 10
     esperado = [None] * 10
     global acuracia_teste
+    errado = 0
 
     matriz_confusao = [[0 for i in range(10)] for j in range(10)]
 
@@ -159,33 +157,13 @@ def test(weights, epoca, file):
         for j in range(exemplos):
             line = recebe_linha(line)
             line = pre_processamento(line)
-
             maior = 0
             indice = 0
-
-            for l in range(10):
-                obtido[l] = calcula_ativacao(weights[l], line)
-                if (obtido[l] > maior):
-                    maior = obtido[l]
-                    indice = l
-
-            for perceptron in range(10):
-                if perceptron == indice:
-                    obtido[perceptron] = 1
-                else:
-                    obtido[perceptron] = 0
-
-            for perceptron in range(10):
-                esperado[perceptron] = define_resposta(int(line[0]), perceptron)
-
-            for perceptron in range(10):
-                matriz_confusao[line[0]][perceptron] += obtido[perceptron]
-
-            if esperado[line[0]] == obtido[line[0]]:
-                acertos += 1
-
-            acuracia = acertos / exemplos
-
+            indice = calcula_ativacoes(indice, line, maior, obtido, weights)
+            ativa_array_obtidos(indice, obtido)
+            define_esperados(esperado, line)
+            acertos, errado = contabiliza_acertos(acertos, errado, esperado, line, obtido)
+            acuracia = calcula_acuracia(acertos, errado, acuracia)
             line = file.readline()
 
     print('%d - acuracia teste: %f\n' % (epoca, acuracia))
@@ -404,3 +382,6 @@ def calcula_media(array):
 def define_nome_arquivo_abrir(treino):
     name = 'parte_' + str(treino) + '.csv'
     return name
+
+
+main()

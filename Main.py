@@ -3,6 +3,7 @@ import random
 import numpy
 
 import csv
+'''
 f = open('mnist_teste.csv')
 f2 = open('mnist_treinamento.csv')
 treino = csv.reader(f2)
@@ -34,11 +35,11 @@ with m:
     write = csv.writer(m) 
     write.writerows(combinacao)
 
-
+'''
 
 size = 0
 learn_rate = 0.1
-epocas = 10
+epocas = 50
 
 
 def recebe_linha(line):
@@ -113,7 +114,7 @@ def imprime_matriz(matriz):
 
 
 def train():
-    exemplos = 1000
+    exemplos = 60000
     print('TREINANDO')
     weights = [None] * 10
     obtido = [None] * 10
@@ -182,10 +183,12 @@ def train():
                 line = file.readline()
                 '''print('acuracia:%f' % (percentual_acerto))
                 imprime_matriz(matriz_confusao)'''
-     
+        print('epoca: %i' % epoca)
+        print('acuracia:%f' % (percentual_acerto))
+        imprime_matriz(matriz_confusao)
+        test(weights)
     print("FINAL")
-    print(acertos)
-    print(total)
+
     print('acuracia:%f' % (percentual_acerto))
     imprime_matriz(matriz_confusao)
 
@@ -196,7 +199,7 @@ def train():
 
 def test(weights):
     print('TESTANDO Perceptron')
-    exemplos = 1000
+    exemplos = 10000
     percentual_acerto = 0
     acertos = 0
     obtido = [None] * 10

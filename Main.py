@@ -6,8 +6,9 @@ import matplotlib.pyplot as pyplot
 import numpy
 
 size = 0
-learn_rate = 0.1
-epocas = 10
+learn_rate = 0.01
+epocas = 50
+exemplos = 1600
 acuracia_treinamento = []
 acuracia_teste = []
 
@@ -29,16 +30,22 @@ def treino_holdout(path):
     acuracia_teste = []
     print('Iniciando Holdout')
     global acuracia_treinamento
-    exemplos = 100
+    acuracia_treinamento = []
+    global exemplos
     erro, esperado, obtido, weights = cria_arrays_auxiliares()
     matriz_confusao = cria_matriz_confusao()
 
     cria_pesos(weights)
 
     for epoca in range(epocas):
-        acuracia = 0
         acertos = 0
         errado = 0
+        acuracia = test(weights, epoca, 'mnist_treinamento.csv')
+        acuracia_t = test(weights, epoca, 'mnist_teste.csv')
+        acuracia_treinamento.append(float(acuracia))
+        acuracia_teste.append(acuracia_t)
+        print('\n%d - acuracia treinamento: %f' % (epoca, acuracia))
+        print('%d - acuracia teste: %f' % (epoca, acuracia_t))
         with open(path, 'r') as file:
             line = file.readline()
 
@@ -51,16 +58,19 @@ def treino_holdout(path):
                 ativa_array_obtidos(indice, obtido)
                 define_esperados(esperado, line)
                 atualiza_matriz_confusao(line, matriz_confusao, obtido)
-                calcula_erro_atualiza_peso(erro, esperado, line, obtido, weights)
+                weights = calcula_erro_atualiza_peso(erro, esperado, line, obtido, weights)
                 acertos, errado = contabiliza_acertos(acertos, errado, esperado, line, obtido)
-                acuracia = calcula_acuracia(acertos, errado, acuracia)
+                # acuracia = calcula_acuracia(acertos, errado, acuracia)
                 line = file.readline()
 
-        print('%d - acuracia treinamento: %f' % (epoca, acuracia))
-        acuracia_treinamento.append(acuracia)
-        test(weights, epoca, 'mnist_teste.csv')
+        if acuracia >= 0.98 or epoca == epocas - 1:
+            acuracia = test(weights, epoca, 'mnist_treinamento.csv')
+            acuracia_t = test(weights, epoca, 'mnist_teste.csv')
+            acuracia_treinamento.append(float(acuracia))
+            acuracia_teste.append(acuracia_t)
+            break
 
-    # imprime_resultado_holdout()
+    imprime_resultado_holdout()
 
 
 def treino_cross_validation():
@@ -141,7 +151,8 @@ def treino_cross_validation():
 
 
 def test(weights, epoca, file):
-    exemplos = 100
+    global exemplos
+    e = int(exemplos / 6)
     acuracia = 0
     acertos = 0
     obtido = [None] * 10
@@ -149,12 +160,9 @@ def test(weights, epoca, file):
     global acuracia_teste
     errado = 0
 
-    matriz_confusao = [[0 for i in range(10)] for j in range(10)]
-
-    # imprime_matriz(matriz_confusao)
     with open(file) as file:
         line = file.readline()
-        for j in range(exemplos):
+        for j in range(e):
             line = recebe_linha(line)
             line = pre_processamento(line)
             maior = 0
@@ -166,8 +174,7 @@ def test(weights, epoca, file):
             acuracia = calcula_acuracia(acertos, errado, acuracia)
             line = file.readline()
 
-    print('%d - acuracia teste: %f\n' % (epoca, acuracia))
-    acuracia_teste.append(acuracia)
+    return acuracia
 
 
 def imprime_resultado_holdout():

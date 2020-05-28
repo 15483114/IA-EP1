@@ -6,9 +6,9 @@ import matplotlib.pyplot as pyplot
 import numpy
 
 size = 0
-learn_rate = 0.01
-epocas = 50
-exemplos = 1600
+learn_rate = 0.001
+epocas = 2
+exemplos = 100
 acuracia_treinamento = []
 acuracia_teste = []
 
@@ -71,13 +71,23 @@ def treino_holdout(path):
             break
 
     imprime_resultado_holdout()
+    imprime_matriz(matriz_confusao)
+
+    pyplot.matshow(matriz_confusao, cmap=pyplot.cm.plasma)
+    pyplot.xticks(numpy.arange(10))
+    pyplot.yticks(numpy.arange(10))
+    pyplot.title('Matriz de Confusão\n')
+    for i in range(10):
+        for j in range(10):
+            pyplot.text(j, i, matriz_confusao[i][j], color='white', va='center', ha='center')
+    pyplot.show()
 
 
 def treino_cross_validation():
     global acuracia_teste
     print('...................\nIniciando Kfold Cross-Validation\n........................')
     global acuracia_treinamento_cross_validation
-    exemplos = 3000
+    exemplos = 100
     weights = [None] * 10
     obtido = [None] * 10
     esperado = [None] * 10

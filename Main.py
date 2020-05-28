@@ -171,13 +171,15 @@ def test(weights, epoca, file):
 
 
 def imprime_resultado_holdout():
-    cria_array_auxiliar(epocas)
-    pyplot.plot(x, acuracia_treinamento, label='Treinamento')
-    pyplot.plot(x, acuracia_teste, label='Teste')
+    x = cria_array_auxiliar(epocas)
+    pyplot.plot(acuracia_treinamento, label='Treinamento')
+    pyplot.plot(acuracia_teste, label='Teste')
     pyplot.xlabel('Epoca')
     pyplot.ylabel('Acuracia')
-    pyplot.title('Holdout')
+    pyplot.title('Holdout\nEpocas: %d   Exemplos: %d    Learn rate: %.3f' % (epocas, exemplos, learn_rate))
     pyplot.legend()
+    pyplot.ylim([0, 1])
+    pyplot.xlim([0, 50])
     pyplot.show()
 
 
@@ -333,6 +335,7 @@ def calcula_erro_atualiza_peso(erro, esperado, line, obtido, weights):
     for perceptron in range(10):
         erro[perceptron] = calcula_erro(esperado[perceptron], obtido[perceptron])
         weights[perceptron] = atualiza_pesos(erro[perceptron], weights[perceptron], line)
+    return weights
 
 
 def atualiza_matriz_confusao(line, matriz_confusao, obtido):

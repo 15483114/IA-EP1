@@ -7,8 +7,13 @@ import numpy
 
 size = 0
 learn_rate = 0.01
+<<<<<<< HEAD
 epocas = 20
 exemplos = 100
+=======
+epocas = 50
+exemplos = 1600
+>>>>>>> parent of 2b2f09c... matriz de confusão
 acuracia_treinamento = []
 acuracia_teste = []
 
@@ -72,6 +77,7 @@ def treino_holdout(path, path_test,x, holdout):
             acuracia_teste.append(acuracia_t)
             break
 
+<<<<<<< HEAD
     # imprime_resultado_holdout()
     # imprime_matriz(matriz_confusao)
     #
@@ -105,6 +111,21 @@ def treino_cross_validation():
                 acuracia_t += b
         acuracia_treinamento.append(acuracia)
         acuracia_teste.append(acuracia_t)
+=======
+    imprime_resultado_holdout()
+
+
+def treino_cross_validation():
+    global acuracia_teste
+    print('...................\nIniciando Kfold Cross-Validation\n........................')
+    global acuracia_treinamento_cross_validation
+    exemplos = 3000
+    weights = [None] * 10
+    obtido = [None] * 10
+    esperado = [None] * 10
+    erro = [None] * 10
+    matriz_confusao = [[0 for i in range(10)] for j in range(10)]
+>>>>>>> parent of 2b2f09c... matriz de confusão
 
     media_teste = 0
     for i in acuracia_teste:

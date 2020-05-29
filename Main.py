@@ -6,42 +6,44 @@ import matplotlib.pyplot as pyplot
 import numpy
 
 size = 0
-learn_rate = 0.001
-epocas = 2
+learn_rate = 0.01
+epocas = 20
 exemplos = 100
 acuracia_treinamento = []
 acuracia_teste = []
 
-acuracia_treinamento_cross_validation = []
-acuracia_teste_cross_validation = []
-
-x = []
-
 
 def main():
     # embaralho_tudo()
-    treino_holdout('mnist_treinamento.csv')
-    # treino_cross_validation()
+    # treino_holdout('mnist_treinamento.csv', 'mnist_teste.csv',[0], True)
+    treino_cross_validation()
     exit()
 
 
-def treino_holdout(path):
+def treino_holdout(path, path_test,x, holdout):
     global acuracia_teste
+    global acuracia_treinamento
+    global exemplos
     acuracia_teste = []
     print('Iniciando Holdout')
-    global acuracia_treinamento
     acuracia_treinamento = []
-    global exemplos
-    erro, esperado, obtido, weights = cria_arrays_auxiliares()
+    erro, esperado, obtido, w = cria_arrays_auxiliares()
     matriz_confusao = cria_matriz_confusao()
+    acuracia = 0
+    acuracia_t = 0
+    weights = [None] * 10
 
-    cria_pesos(weights)
+    if holdout == True:
+        weights = w
+        cria_pesos(weights)
+    else:
+        weights = x
 
     for epoca in range(epocas):
         acertos = 0
         errado = 0
-        acuracia = test(weights, epoca, 'mnist_treinamento.csv')
-        acuracia_t = test(weights, epoca, 'mnist_teste.csv')
+        acuracia = test(weights, path)
+        acuracia_t = test(weights, path_test)
         acuracia_treinamento.append(float(acuracia))
         acuracia_teste.append(acuracia_t)
         print('\n%d - acuracia treinamento: %f' % (epoca, acuracia))
@@ -64,105 +66,91 @@ def treino_holdout(path):
                 line = file.readline()
 
         if acuracia >= 0.98 or epoca == epocas - 1:
-            acuracia = test(weights, epoca, 'mnist_treinamento.csv')
-            acuracia_t = test(weights, epoca, 'mnist_teste.csv')
+            acuracia = test(weights, path_test)
+            acuracia_t = test(weights, path_test)
             acuracia_treinamento.append(float(acuracia))
             acuracia_teste.append(acuracia_t)
             break
 
-    imprime_resultado_holdout()
-    imprime_matriz(matriz_confusao)
-
-    pyplot.matshow(matriz_confusao, cmap=pyplot.cm.plasma)
-    pyplot.xticks(numpy.arange(10))
-    pyplot.yticks(numpy.arange(10))
-    pyplot.title('Matriz de Confusão\n')
-    for i in range(10):
-        for j in range(10):
-            pyplot.text(j, i, matriz_confusao[i][j], color='white', va='center', ha='center')
-    pyplot.show()
+    # imprime_resultado_holdout()
+    # imprime_matriz(matriz_confusao)
+    #
+    # pyplot.matshow(matriz_confusao, cmap=pyplot.cm.plasma)
+    # pyplot.xticks(numpy.arange(10))
+    # pyplot.yticks(numpy.arange(10))
+    # pyplot.title('Matriz de Confusão\n')
+    # for i in range(10):
+    #     for j in range(10):
+    #         pyplot.text(j, i, matriz_confusao[i][j], color='white', va='center', ha='center')
+    # pyplot.show()
+    return acuracia, acuracia_t, weights
 
 
 def treino_cross_validation():
-    global acuracia_teste
-    print('...................\nIniciando Kfold Cross-Validation\n........................')
-    global acuracia_treinamento_cross_validation
-    exemplos = 100
-    weights = [None] * 10
-    obtido = [None] * 10
-    esperado = [None] * 10
-    erro = [None] * 10
-    matriz_confusao = [[0 for i in range(10)] for j in range(10)]
-
-    lista_acuracias_teste = []
-    lista_acuracias_treinamento = []
-
-    for teste_fold in range(10):
-        print('...................\nFold de teste: %d\n........................' % teste_fold)
-        acuracia_teste = []
-        x = []
+    global epocas, exemplos, acuracia_treinamento, acuracia_teste
+    acuracia_teste = []
+    acuracia_treinamento = []
+    for teste in range(10):
         acuracia = 0
-        acertos = 0
-        errado = 0
-        epocas_kfold = 6
+        acuracia_t = 0
+        weights = [None] * 10
+        cria_pesos(weights)
+        for treino in range(10):
+            if treino != teste:
+                print(str(teste) * 10)
+                train_path = 'parte_' + str(treino) + '.csv'
+                teste_path = 'parte_' + str(teste) + '.csv'
+                a, b,weights = treino_holdout(train_path, teste_path, weights, False)
+                acuracia += a
+                acuracia_t += b
+        acuracia_treinamento.append(acuracia)
+        acuracia_teste.append(acuracia_t)
 
-        for perceptron in range(10):
-            weights[perceptron] = create_weights()
-        acuracia_treinamento_cross_validation = []
-        for epoca in range(epocas_kfold):
-            for treino in range(10):
-                if treino != teste_fold:
-                    path_file = define_nome_arquivo_abrir(treino)
+    media_teste = 0
+    for i in acuracia_teste:
+        media_teste += i
+    media_teste /= 10
 
-                    with open(path_file) as file:
-                        line = file.readline()
+    media_treino = 0
+    for i in acuracia_treinamento:
+        media_treino += i
+    media_treino /= 10
+    print('+--------------------------------------------------------+')
+    print('|Acuracia média de treinamento    Acuracia média de teste|')
+    print('|%.3f                            %.3f         ' % (media_treino, media_teste))
+    print('+--------------------------------------------------------+')
 
-                        for teste in range(exemplos):
-                            line = recebe_linha(line)
-                            line = pre_processamento(line)
 
-                            maior = 0
-                            indice = 0
+def update_accuracy_list(acuracia_teste_cross_validation, acuracia_treinamento_cross_validation, lista_acuracias_teste,
+                         lista_acuracias_treinamento):
+    lista_acuracias_treinamento.append(
+        acuracia_treinamento_cross_validation[len(acuracia_treinamento_cross_validation) - 1])
+    lista_acuracias_teste.append(acuracia_teste_cross_validation[len(acuracia_teste_cross_validation) - 1])
 
-                            indice = calcula_ativacoes(indice, line, maior, obtido, weights)
-                            ativa_array_obtidos(indice, obtido)
-                            define_esperados(esperado, line)
-                            atualiza_matriz_confusao(line, matriz_confusao, obtido)
-                            calcula_erro_atualiza_peso(erro, esperado, line, obtido, weights)
-                            acertos, errado = contabiliza_acertos(acertos, errado, esperado, line, obtido)
-                            acuracia = calcula_acuracia(acertos, errado, acuracia)
-                            line = file.readline()
 
-            print('Fold %d - Epoca %d - Acuracia treinamento %f' % (teste_fold, epoca, acuracia))
-            acuracia_treinamento_cross_validation.append(acuracia)
-            path_file = define_nome_arquivo_abrir(teste_fold)
-            test(weights, teste_fold, path_file)
+def print_graph(acuracia_teste_cross_validation, acuracia_treinamento_cross_validation, epocas, exemplos, teste_fold):
+    pyplot.plot(acuracia_treinamento_cross_validation, label='Treinamento')
+    pyplot.plot(acuracia_teste_cross_validation, label='Teste')
+    pyplot.xlabel('Epoca')
+    pyplot.ylabel('Acuracia')
+    pyplot.title('Cross-validation\nFold: %d    Epocas: %d   Exemplos: %d    Learn rate: %.1f' % (
+        teste_fold, epocas, exemplos, learn_rate))
+    pyplot.legend()
+    pyplot.ylim([0, 1])
+    pyplot.xlim([0, 50])
+    pyplot.show()
 
-        x = []
-        x = cria_array_auxiliar(epocas_kfold)
-        print(x)
-        pyplot.plot(x, acuracia_treinamento_cross_validation, label='Treinamento')
-        pyplot.plot(x, acuracia_teste, label='Teste')
-        pyplot.xlabel('Epoca')
-        pyplot.ylabel('Acuracia')
-        pyplot.title('Cross-Validation\nFold %d' % teste_fold)
-        pyplot.legend()
-        pyplot.show()
-        pyplot.close()
-        lista_acuracias_treinamento.append(
-            acuracia_treinamento_cross_validation[len(acuracia_treinamento_cross_validation) - 1])
-        lista_acuracias_teste.append(acuracia_teste[len(acuracia_teste) - 1])
 
+def print_result(lista_acuracias_teste, lista_acuracias_treinamento):
     media_treinamento = calcula_media(lista_acuracias_treinamento)
     media_teste = calcula_media(lista_acuracias_teste)
+    print('................................\nAcuracia treinamento média %f' % media_treinamento)
+    print('Acuracia exemplo média %f\n.........................................' % media_teste)
 
-    print('................................\ncuracia treinamento média %f' % media_treinamento)
-    print('Acuracia teste média %f\n.........................................' % media_teste)
 
-
-def test(weights, epoca, file):
+def test(weights, file):
     global exemplos
-    e = int(exemplos / 6)
+    e = int(exemplos)
     acuracia = 0
     acertos = 0
     obtido = [None] * 10
@@ -258,7 +246,7 @@ def recebe_linha(line):
 
 
 def pre_processamento(line):
-    line[0] = int(line[0])
+    line[0] = int(line[0].replace('[', ''))
     for i in range(1, len(line) - 1):
         line[i] = float(line[i]) / 255
     return line
@@ -310,7 +298,6 @@ def create_weights():
         size = len(line)
         weights = numpy.zeros(size)
         weights = inicializa_pesos_aleatorios(weights)
-        # print(weights)
         return weights
 
 
